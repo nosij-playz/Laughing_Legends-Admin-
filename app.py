@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import random
 import string
 from datetime import datetime
+import json
 
 load_dotenv()
 
@@ -13,21 +14,33 @@ app = Flask(__name__)
 
 def initialize_firebase():
     """
-    Initialize Firebase app and return Firestore client.
-    Handles missing credential file, repeated initialization, and general errors.
+    Initialize Firebase app using environment variable for credentials.
+    The environment variable should contain either:
+      1. Path to JSON file, OR
+      2. JSON string with service account content.
     """
     try:
-        # Prevent re-initialization error if already initialized
+        # Prevent re-initialization
         if not firebase_admin._apps:
-            cred_path = 'laughinglegends-4b740-firebase-adminsdk-fbsvc-813f00d3ba.json'
-            
-            if os.path.exists(cred_path):
-                cred = credentials.Certificate(cred_path)
-                firebase_admin.initialize_app(cred)
-                print("✅ Firebase initialized with service account credentials.")
+            firebase_cred = os.getenv("FIREBASE_CREDENTIALS_JSON")
+
+            if firebase_cred:
+                if os.path.exists(firebase_cred):
+                    # Case 1: FIREBASE_CREDENTIALS = path to JSON file
+                    cred = credentials.Certificate(firebase_cred)
+                    firebase_admin.initialize_app(cred)
+                    print("✅ Firebase initialized using credentials file from environment variable.")
+                else:
+                    # Case 2: FIREBASE_CREDENTIALS = JSON string content
+                    cred_dict = json.loads(firebase_cred)
+                    cred = credentials.Certificate(cred_dict)
+                    firebase_admin.initialize_app(cred)
+                    print("✅ Firebase initialized using JSON credentials from environment variable.")
             else:
+                # Fallback — uses ADC (Application Default Credentials)
                 firebase_admin.initialize_app()
-                print("⚠️ Firebase initialized without explicit credentials (using default environment settings).")
+                print("⚠️ Firebase initialized using default credentials (no FIREBASE_CREDENTIALS found).")
+
         else:
             print("ℹ️ Firebase already initialized, reusing existing app.")
         

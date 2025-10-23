@@ -27,7 +27,7 @@ def initialize_firebase():
             if firebase_cred:
                 if os.path.exists(firebase_cred):
                     # Case 1: FIREBASE_CREDENTIALS = path to JSON file
-                    cred = credentials.Certificate(firebase_cred)
+                    cred = credentials.Certificate.from_json(json.loads(firebase_cred))
                     firebase_admin.initialize_app(cred)
                     print("✅ Firebase initialized using credentials file from environment variable.")
                 else:
